@@ -1,0 +1,35 @@
+{
+  "name": "mimzclient",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^1.2.36",
+    "@fortawesome/free-brands-svg-icons": "^5.15.4",
+    "@fortawesome/free-regular-svg-icons": "^5.15.4",
+    "@fortawesome/free-solid-svg-icons": "^5.15.4",
+    "@fortawesome/vue-fontawesome": "^3.0.8",
+    "@types/three": "^0.167.2",
+    "axios": "^1.7.3",
+    "papaparse": "^5.4.1",
+    "pcl": "^0.0.1",
+    "secure-ls": "^2.0.0",
+    "vue": "^3.4.29",
+    "vue-router": "^4.4.3",
+    "vuex": "^4.0.2",
+    "vuex-persistedstate": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/papaparse": "^5.3.14",
+    "@vitejs/plugin-vue": "^5.0.5",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.41",
+    "tailwindcss": "^3.4.9",
+    "vite": "^5.3.1"
+  }
+}
