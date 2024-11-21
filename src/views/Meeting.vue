@@ -17,11 +17,15 @@ export default {
       detailsPopupPosition: {top: 0, left: 0},
       userId: null,
       username: null,
+      userAvatar: null,
+      isHost: false, // 新增变量，判断是否为房间主人
       meetingDetails: null, // 获取会议详情
       localStream: null,
       remoteStreams: [],
       peerConnections: [],
       socket: null,
+      messageBubbleVisible: false, // 控制气泡是否可见
+      currentMessage: '', // 当前展示的消息
     };
   },
   created() {
@@ -46,9 +50,14 @@ export default {
         this.$router.replace('/');
       }
       this.meetingDetails = response;
+
+      // 判断用户是否为房间主人
+      this.isHost = response.hostUserId === this.userId; // 假设hostId为房间主人ID
     });
   },
   mounted() {
+    this.userAvatar = this.$store.getters.getUser.avatar;
+    alert(this.userAvatar)
     Get('/rooms/getWs', {roomId: this.$route.params.roomId}).then(wsUrl => {
           if (wsUrl == null) {
             alert('会议不存在或已关闭');
@@ -73,6 +82,24 @@ export default {
             const message = JSON.parse(event.data);
             if (message.type === 'join') {
               console.log(message.payload.username + '加入了会议');
+              // 设置当前消息并显示气泡
+              this.currentMessage =  message.payload.username + ' 加入了会议';
+              this.messageBubbleVisible = true;
+
+              // 1秒后自动隐藏气泡
+              setTimeout(() => {
+                this.messageBubbleVisible = false;
+              }, 1000);
+            } else if (message.type === 'leave') {
+              console.log(message.payload.username + '离开了会议');
+              // 设置当前消息并显示气泡
+              this.currentMessage =  message.payload.username + ' 离开了会议';
+              this.messageBubbleVisible = true;
+
+              // 1秒后自动隐藏气泡
+              setTimeout(() => {
+                this.messageBubbleVisible = false;
+              }, 1000);
             }
           }
           // this.socket.onmessage = (event) => {
@@ -126,6 +153,18 @@ export default {
 
     sendMessage(message) {
       this.socket.send(JSON.stringify(message));
+    },
+    leaveMeeting() {
+      // 处理离开会议的逻辑
+      Post('/rooms/leaveRoom', {roomId: this.$route.params.roomId, userId: this.userId}).then(response => {
+        if (response === 'success') {
+          this.sendMessage({type: 'leave', payload: {roomId: this.$route.params.roomId, username: this.username}})
+          this.socket.close();
+          this.$router.replace('/'); // 返回主页或其他逻辑
+        }else {
+          alert(response);
+        }
+      });
     },
     endMeeting() {
       Post('/rooms/closeRoom', {roomId: this.$route.params.roomId, userId: this.userId}).then(response => {
@@ -246,9 +285,13 @@ export default {
         正在讲话: June;
       </div>
       <div class="flex flex-col items-center">
-        <img src="https://replicate.delivery/yhqm/fyrzye5XpNpTzEdmYhkHNyAPVzXK1HnEFOthptZkVI8ydPSTA/out-0.png"
+        <img v-if="userAvatar" :src="userAvatar"
              alt="Profile picture of June, a cat" class="rounded-full mb-2" width="100" height="100"/>
         <span class="text-gray-700">{{ username }}</span>
+      </div>
+      <!-- 添加气泡提示 -->
+      <div v-if="messageBubbleVisible" class="message-bubble absolute top-10 left-1/2 transform -translate-x-1/2">
+        {{ currentMessage }}
       </div>
     </div>
     <div v-if="isCameraOn" class="flex-grow flex flex-col items-center justify-center px-4 overflow-hidden">
@@ -299,8 +342,11 @@ export default {
           <font-awesome-icon :icon="['fas', 'cogs']"/>
         </i>
       </div>
-      <button class="bg-red-500 text-white px-4 py-2 rounded-md mt-2 md:mt-0" @click="endMeetingConfirm = true">
+      <button v-if="isHost" class="bg-red-500 text-white px-4 py-2 rounded-md mt-2 md:mt-0" @click="endMeetingConfirm = true">
         结束会议
+      </button>
+      <button v-else class="bg-red-500 text-white px-4 py-2 rounded-md mt-2 md:mt-0" @click="leaveMeeting()">
+        离开会议
       </button>
     </div>
     <!-- end meeting Confirm Modal -->
@@ -332,4 +378,26 @@ export default {
 .animate-bounce {
   animation: colorJump 0.5s infinite;
 }
+
+.message-bubble {
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 10px 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.5s ease;
+  max-width: 250px; /* 根据需要调整 */
+  text-align: center;
+  z-index: 10; /* 确保气泡显示在其他元素之上 */
+}
+
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 </style>

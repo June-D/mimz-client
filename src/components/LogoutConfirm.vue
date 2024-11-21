@@ -1,13 +1,17 @@
 <script>
+import {Get} from "@/plugins/http.js";
+
 export default {
   name: 'LogoutConfirm',
   methods: {
     logout() {
-      this.$store.dispatch('logout');
-      localStorage.removeItem('token');
-      sessionStorage.removeItem('token');
-      this.$emit('close');
-      this.$router.replace('/login');
+      Get('/login/logout', {}).then(() => {
+        this.$store.dispatch('logout');
+        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
+        this.$emit('close');
+        this.$router.replace('/login');
+      });
     },
   }
 }
