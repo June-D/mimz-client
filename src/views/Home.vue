@@ -108,7 +108,7 @@ export default {
     return {
       showSettings: false,
       showCalendar: false,
-      avatar: 'https://replicate.delivery/yhqm/DlFubeG0vtwREChpDcxiSoeFzkuDWLwxDy9gx0QoGQwmrMSTA/out-0.png',
+      avatar: this.$store.getters.getUser.avatar? this.$store.getters.getUser.avatar : 'https://replicate.delivery/yhqm/DlFubeG0vtwREChpDcxiSoeFzkuDWLwxDy9gx0QoGQwmrMSTA/out-0.png',
       fileInput: null,
       hoverJoin: false,
       hoverQuick: false,
@@ -218,4 +218,14 @@ body {
   75% { transform: translateX(-10px); }
   100% { transform: translateX(0); }
 }
+
+img.rounded-full {
+  border-radius: 50%;
+}
+
+img {
+  display: block;
+  height: 40px !important;
+}
+
 </style>
