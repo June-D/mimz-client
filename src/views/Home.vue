@@ -102,6 +102,8 @@ import LogoutConfirm from "@/components/LogoutConfirm.vue";
 
 <script>
 import {Post} from "@/plugins/http.js";
+import axios from 'axios'
+
 
 export default {
   data() {
@@ -133,11 +135,33 @@ export default {
     uploadImage(event) {
       const file = event.target.files[0];
       if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          this.avatar = e.target.result;
-        };
-        reader.readAsDataURL(file);
+        const formData = new FormData();
+        formData.append('avatar', file); // 'avatar' 是后端接收的参数名
+        axios.post(process.env.BASE_API + '/user/upload-avatar', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Mimztoken': localStorage.getItem('token') || sessionStorage.token
+          },
+          withCredentials: true // 添加这个属性以确保携带cookie
+        }).then(response => {
+          console.log(response.data);
+          if(response.data.code === 0){
+            // 响应返回新的头像 URL
+            this.avatar = response.data.data;
+            const user = this.$store.getters.getUser;
+            user.avatar = this.avatar;
+            this.$store.commit('setUser', user);
+          } else if(response.data.code === 401){
+            alert('请先登录');
+            this.$router.replace('/login');
+          } else {
+            alert(response.data.message);
+          }
+        }).catch(error => {
+          console.error(error);
+          alert('头像上传失败，请稍后再试');
+        });
+        event.target.value = ''; // 清空文件输入框，以便下次选择相同文件
       }
     },
     openJoinMeetingDialog() {

@@ -400,4 +400,7 @@ export default {
   }
 }
 
+img {
+  height: 100px !important;
+}
 </style>
