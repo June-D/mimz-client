@@ -23,6 +23,8 @@ export default {
       localStream: null,
       remoteStreams: [],
       peerConnections: [],
+      members: [], // 存储所有参会人员信息
+      membersInfo: new Map(), // 存储所有参会人员信息
       socket: null,
       messageBubbleVisible: false, // 控制气泡是否可见
       currentMessage: '', // 当前展示的消息
@@ -44,20 +46,20 @@ export default {
     this.userId = this.$store.getters.getUser.userId;
     this.username = this.$store.getters.getUser.username;
     // 获取会议详情
-    Get('/rooms/getRoomInfo', {roomId: this.$route.params.roomId}).then(response => {
-      if (response.status === 'closed') {
+    Get('/rooms/getRoomInfo', {roomId: this.$route.params.roomId}).then(roomInfo => {
+      if (roomInfo.status === 'closed') {
         alert('会议已关闭');
         this.$router.replace('/');
       }
-      this.meetingDetails = response;
+      this.meetingDetails = roomInfo;
 
       // 判断用户是否为房间主人
-      this.isHost = response.hostUserId === this.userId; // 假设hostId为房间主人ID
+      this.isHost = roomInfo.hostUserId === this.userId; // 假设hostId为房间主人ID
     });
   },
   mounted() {
     this.userAvatar = this.$store.getters.getUser.avatar;
-    alert(this.userAvatar)
+
     Get('/rooms/getWs', {roomId: this.$route.params.roomId}).then(wsUrl => {
           if (wsUrl == null) {
             alert('会议不存在或已关闭');
@@ -67,7 +69,9 @@ export default {
           this.socket = new WebSocket(wsUrl);
           this.socket.onopen = (event) => {
             console.log('WebSocket 已连接');
-            this.sendMessage({type: 'join', payload: {roomId: this.$route.params.roomId, username: this.username}});
+            this.sendMessage({type: 'join', payload: {roomId: this.$route.params.roomId, userId: this.userId, username: this.username, avatar: this.userAvatar, isHost: this.isHost, isSpeaking: false, isAudioOn: false, isCameraOn: false, isMuted: false, isSharingScreen: false}});
+            this.members.push(this.username)
+            this.membersInfo.set(this.username, {roomId: this.$route.params.roomId, userId: this.userId, username: this.username, avatar: this.userAvatar, isHost: this.isHost, isSpeaking: false, isAudioOn: false, isCameraOn: false, isMuted: false, isSharingScreen: false}); // 存储所有参会人员信息
           };
           this.socket.onerror = (error) => {
             console.log('WebSocket 连接失败：', error);
@@ -80,12 +84,16 @@ export default {
           };
           this.socket.onmessage = (event) => {
             const message = JSON.parse(event.data);
-            if (message.type === 'join') {
+            if (message.type === 'joined') { // 存储所有参会人员信息
+              this.members.push(message.payload.username);
+              this.membersInfo.set(message.payload.username, message.payload);
+            } else if (message.type === 'join') {
               console.log(message.payload.username + '加入了会议');
               // 设置当前消息并显示气泡
               this.currentMessage =  message.payload.username + ' 加入了会议';
               this.messageBubbleVisible = true;
-
+              this.members.push(message.payload.username);
+              this.membersInfo.set(message.payload.username, message.payload);
               // 1秒后自动隐藏气泡
               setTimeout(() => {
                 this.messageBubbleVisible = false;
@@ -95,7 +103,14 @@ export default {
               // 设置当前消息并显示气泡
               this.currentMessage =  message.payload.username + ' 离开了会议';
               this.messageBubbleVisible = true;
-
+              // 遍历members 数组，删除离开的用户信息
+              for (let i = 0; i < this.members.length; i++) {
+                if (this.members[i] === message.payload.username) {
+                  this.members.splice(i, 1);
+                  this.membersInfo.delete(message.payload.username);
+                  break;
+                }
+              }
               // 1秒后自动隐藏气泡
               setTimeout(() => {
                 this.messageBubbleVisible = false;
@@ -279,8 +294,12 @@ export default {
         </i></button>
       </div>
     </div>
+    <!-- 添加气泡提示 -->
+    <div v-if="messageBubbleVisible" class="message-bubble absolute top-10 left-1/2 transform -translate-x-1/2">
+      {{ currentMessage }}
+    </div>
     <!-- Main Content -->
-    <div v-if="!isCameraOn" class="flex-grow flex flex-col items-center justify-center px-4">
+    <div class="flex-grow flex flex-col items-center justify-center px-4">
       <div class="bg-blue-100 text-blue-700 px-4 py-2 rounded-md mb-4 text-center">
         正在讲话: June;
       </div>
@@ -289,18 +308,14 @@ export default {
              alt="Profile picture of June, a cat" class="rounded-full mb-2" width="100" height="100"/>
         <span class="text-gray-700">{{ username }}</span>
       </div>
-      <!-- 添加气泡提示 -->
-      <div v-if="messageBubbleVisible" class="message-bubble absolute top-10 left-1/2 transform -translate-x-1/2">
-        {{ currentMessage }}
-      </div>
     </div>
-    <div v-if="isCameraOn" class="flex-grow flex flex-col items-center justify-center px-4 overflow-hidden">
-      <!-- 展示所有远程视频流 -->
-      <div v-for="(stream, index) in remoteStreams" :key="index">
-        <video autoplay class="w-full h-auto" :ref="'remoteVideo' + index" :srcObject="stream"></video>
-      </div>
-    </div>
-    <audio ref="audioElement" autoplay></audio>
+<!--    <div v-if="isCameraOn" class="flex-grow flex flex-col items-center justify-center px-4 overflow-hidden">-->
+<!--      &lt;!&ndash; 展示所有远程视频流 &ndash;&gt;-->
+<!--      <div v-for="(stream, index) in remoteStreams" :key="index">-->
+<!--        <video autoplay class="w-full h-auto" :ref="'remoteVideo' + index" :srcObject="stream"></video>-->
+<!--      </div>-->
+<!--    </div>-->
+<!--    <audio ref="audioElement" autoplay></audio>-->
     <!-- Bottom Bar -->
     <div class="flex items-center justify-between bg-white border-t border-gray-200 px-4 py-2 flex-wrap">
       <div class="flex items-center space-x-4 flex-wrap justify-center">
