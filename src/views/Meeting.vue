@@ -300,15 +300,24 @@ export default {
     </div>
     <!-- Main Content -->
     <div class="flex-grow flex flex-col items-center justify-center px-4">
-      <div class="bg-blue-100 text-blue-700 px-4 py-2 rounded-md mb-4 text-center">
-        正在讲话: June;
-      </div>
-      <div class="flex flex-col items-center">
-        <img v-if="userAvatar" :src="userAvatar"
-             alt="Profile picture of June, a cat" class="rounded-full mb-2" width="100" height="100"/>
-        <span class="text-gray-700">{{ username }}</span>
+      <div class="flex flex-wrap justify-center w-full">
+        <div v-for="(member, index) in members" :key="index" class="bg-white shadow-md rounded-lg p-4 m-2 flex flex-col items-center">
+          <img v-if="membersInfo.get(member)?.avatar" :src="membersInfo.get(member).avatar" alt="Profile picture" class="rounded-full mb-2" width="100" height="100"/>
+          <span class="text-gray-700">{{ member }}</span>
+          <!-- 根据需要可以添加更多的用户信息 -->
+        </div>
       </div>
     </div>
+<!--    <div class="flex-grow flex flex-col items-center justify-center px-4">-->
+<!--      <div class="bg-blue-100 text-blue-700 px-4 py-2 rounded-md mb-4 text-center">-->
+<!--        正在讲话: June;-->
+<!--      </div>-->
+<!--      <div class="flex flex-col items-center">-->
+<!--        <img v-if="userAvatar" :src="userAvatar"-->
+<!--             alt="Profile picture of June, a cat" class="rounded-full mb-2" width="100" height="100"/>-->
+<!--        <span class="text-gray-700">{{ username }}</span>-->
+<!--      </div>-->
+<!--    </div>-->
 <!--    <div v-if="isCameraOn" class="flex-grow flex flex-col items-center justify-center px-4 overflow-hidden">-->
 <!--      &lt;!&ndash; 展示所有远程视频流 &ndash;&gt;-->
 <!--      <div v-for="(stream, index) in remoteStreams" :key="index">-->
@@ -357,6 +366,7 @@ export default {
           <font-awesome-icon :icon="['fas', 'cogs']"/>
         </i>
       </div>
+
       <button v-if="isHost" class="bg-red-500 text-white px-4 py-2 rounded-md mt-2 md:mt-0" @click="endMeetingConfirm = true">
         结束会议
       </button>
